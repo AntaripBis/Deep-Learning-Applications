@@ -1,0 +1,23 @@
+DATA_DIR=data
+MODEL_DIR=model/speech_translation_RNN
+RESULT_DIR=results/speech_translation_RNN
+MODEL_JSON_FILE=speech_translation_model.json
+MODEL_H5_FILE=speech_translation_model.h5
+RESULT_FILE=speech_translation_results.csv
+METADATA_FILE=cv-other-dev.csv
+BATCH_SIZE=10
+SEQUENCE_LENGTH=20
+TRAINING_RATIO=0.9
+STACKED_LAYERS=256,256,256
+ENCODER_LAYERS=256
+DECODER_LAYERS=256,256
+MOMENTUM=0.8
+#model type : any one of [compressed,long]
+MODEL_TYPE=compressed
+PROBABILITY_THRESHOLD=0.5
+LOAD_PREVIOUS_MODEL_FLAG=true
+EPOCHS=1
+N_MFCC=50
+AUDIO_DIM=150
+TRANSLATE_SPEECH_FLAG=true
+LEARNING_RATE=0.01
