@@ -13,7 +13,15 @@ def convert_text_to_sequences(text,word_index,vocab_size,sequence_len=30):
 	text_words = text_to_word_sequence(text)
 	#print(text_words)
 	for i,word in enumerate(text_words):
-		encoded_text[i][word_index[word]-1] = 1 
+		if i < sequence_len:
+			encoded_text[i][word_index[word]-1] = 1 
+			#print("Word index : %d "
+		#print("Sum : %d" % (np.sum(encoded_text[i])))
+	return encoded_text
+	
+def convert_word_to_sequence(word,word_index,sequence_len):
+	encoded_text = np.zeros((sequence_len))
+	encoded_text[word_index[word]-1] = 1 
 	return encoded_text
 			
 def convert_text_to_longsequence(text,word_index,vocab_size,sequence_len=30):
@@ -35,6 +43,7 @@ def convert_audio_to_waveform(filename,mfcc_dim):
     wave_mfcc = np.mean(mfcc(y=data, sr=sampling_rate, n_mfcc=mfcc_dim).T,axis=0)
     return wave_mfcc
 '''
+
     
 def convert_audio_to_waveform(filename,mfcc_dim=20,audio_dim=150):
 	#print("audio file : "+filename)
@@ -47,7 +56,7 @@ def convert_audio_to_waveform(filename,mfcc_dim=20,audio_dim=150):
 		 	audio_form[i,] = wave_mfcc[i,:audio_dim]
 		 else:
 		 	audio_form[i,:len(wave_mfcc[i,])] = wave_mfcc[i,] 
-	return audio_form
+	return audio_form.reshape((audio_dim,mfcc_dim))
 
 def convert_video_to_frames(filename,image_rows,image_cols,frame_count=50):
 	frames = []
@@ -87,6 +96,27 @@ def convert_images_to_array(filename,img_row=128,img_col=128):
 	img = resize(img,(img_row,img_col))
 	return img
 	
+def convert_audio_to_basewave(filename):
+	data,sampling_rate = librosa.load(filename)
+	wave_mfcc = mfcc(y=data, sr=sampling_rate)
+	return wave_mfcc
+	
+def convert_speech_to_mfcc(filename,mfcc_dim,frames_per_word):
+	token_mfcc_list = []
+	#print("MFCC file up for conversion : %s" % (filename))
+	wave_mfcc = convert_audio_to_basewave(filename)
+	total_frames = wave_mfcc.shape[1]
+	start_frame_idx = 0
+	while start_frame_idx < total_frames:
+		token_mfcc = np.zeros((mfcc_dim,frames_per_word))
+		seq_len = total_frames-1 - start_frame_idx
+		if seq_len >= frames_per_word: 
+			token_mfcc = wave_mfcc[:,start_frame_idx:start_frame_idx+frames_per_word]
+		elif seq_len > 0 and seq_len < frames_per_word:
+			token_mfcc[:,0:seq_len] = wave_mfcc[:,start_frame_idx:start_frame_idx+seq_len]
+		start_frame_idx += frames_per_word
+		token_mfcc_list.append(token_mfcc)
+	return token_mfcc_list
 
 if __name__=="__main__":
 	audio_file = "data/cv-other-dev/sample-000000.mp3"
