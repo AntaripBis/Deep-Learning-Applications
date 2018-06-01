@@ -7,4 +7,10 @@ The repository contains different applications of deep learning using the keras 
 3. Preferably Linux operating system - Ubuntu or Redhat. Windows can be used for deploying Tensorflow but certain libraries used in the analyses may not work properly.
 4. GPU (optional) may be used to speed up computation.
 
+# Libraries
+1. Tensorflow
+2. Keras
+3. Librosa
+4. OpenCV 
+
 
