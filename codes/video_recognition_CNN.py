@@ -215,13 +215,13 @@ class ActionRecognizer:
 			return
 		if not os.path.exists(self.result_dir):
 			os.makedirs(self.result_dir)
-		print("reverse category dict : %s" % (str(self.reverse_category_dict)))
+		#print("reverse category dict : %s" % (str(self.reverse_category_dict)))
 		with open("/".join([self.result_dir,self.result_file]),"w") as writer:
 			for i,video_file in enumerate(video_files):
 				#if i > 30:
 				#	break
 				predicted_label = self.predict_label_for_video(model,video_file)
-				print("predicted label : %s" % (predicted_label))
+				#print("predicted label : %s" % (predicted_label))
 				largest_idx = np.where(label_texts[i] == np.max(label_texts[i]))
 				largest_idx = largest_idx[0][0]
 				#print("Label Texts : %s" % (self.reverse_category_dict[largest_idx]))
