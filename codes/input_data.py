@@ -175,7 +175,7 @@ class SpeechWordDataGenerator(keras.utils.Sequence):
         
 class VideoDataGenerator(keras.utils.Sequence):
 	'Generates data for Keras'
-	def __init__(self, list_IDs=None, labels=None, batch_size=32,img_row=256,img_col=256,frame_count=50,n_classes=6,shuffle=True):
+	def __init__(self, list_IDs=None, labels=None, batch_size=32,img_row=256,img_col=256,frame_count=50,n_classes=6,n_channels=1,shuffle=True):
 		'Initialization'
 		self.batch_size = batch_size
 		self.labels = labels
@@ -185,6 +185,7 @@ class VideoDataGenerator(keras.utils.Sequence):
 		self.img_col = img_col
 		self.shuffle = shuffle
 		self.n_classes = n_classes
+		self.n_channels = n_channels
 		self.on_epoch_end()
 
 	def __len__(self):
@@ -235,13 +236,14 @@ class VideoDataGenerator(keras.utils.Sequence):
 	def __data_generation(self, X_IDs_temp,Y_IDs_temp):
 		'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
 		# Initialization
-		X = np.empty((self.batch_size,1,self.frame_count,self.img_row,self.img_col))
-		y = np.empty((self.batch_size,self.n_classes), dtype='int')
+		X = np.empty((self.batch_size,self.n_channels,self.frame_count,self.img_row,self.img_col))
+		y = np.empty((self.batch_size,self.n_classes))
 		
 		# Generate data
 		for i, ID in enumerate(X_IDs_temp):
 			# Store sample
-			X[i,0,] = model_utils.convert_video_to_frames(ID,self.img_row,self.img_col,self.frame_count)
+			X[i,] = model_utils.convert_video_to_frames(ID,self.img_row,self.img_col,self.frame_count,self.n_channels)
+			#print(" X tuple : %s" % (str(X[i,])))
 
 			# Store class
 			y[i] = Y_IDs_temp[i]

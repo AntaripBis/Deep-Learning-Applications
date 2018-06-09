@@ -58,36 +58,24 @@ def convert_audio_to_waveform(filename,mfcc_dim=20,audio_dim=150):
 		 	audio_form[i,:len(wave_mfcc[i,])] = wave_mfcc[i,] 
 	return audio_form.reshape((audio_dim,mfcc_dim))
 
-def convert_video_to_frames(filename,image_rows,image_cols,frame_count=50):
+def convert_video_to_frames(filename,image_rows,image_cols,frame_count=50,n_channels=1,normalize_flag=True):
 	frames = []
 	cap = VideoCapture(filename)
-	'''
-	fps = cap.get(cv2.CAP_PROP_FPS)
-	frame_count_1 = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-	print("frame count : %d" %(frame_count_1))
-	width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-	print("frame width : %d" %(width))
-	height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-	print("frame height : %d" %(height))
-	'''
 	for i in range(frame_count):
 		ret,frame = cap.read()
-		gray = cvtColor(frame, cv2.COLOR_BGR2GRAY)
+		if n_channels == 1:
+			frame = cvtColor(frame, cv2.COLOR_BGR2GRAY) 
 		#print("Initial frame shape : %s" % str(gray.shape))
-		gray = resize(gray,(image_cols,image_rows), interpolation = cv2.INTER_AREA)
-		frames.append(gray)
+		frame = resize(frame,(image_cols,image_rows), interpolation = cv2.INTER_AREA)
+		frames.append(frame)
 		if cv2.waitKey(10) == 27:
 			break
 	cap.release()
 	destroyAllWindows()
 	ipt = np.array(frames)
-	'''
-	print(ipt.shape)
-	print(str(ipt))
-	ipt = np.rollaxis(np.rollaxis(ipt,2,0),2,0)
-	print("After rollaxis : "+str(ipt))
-	'''
-	return ipt
+	if normalize_flag:
+		ipt = np.divide(ipt,256)
+	return ipt.reshape(n_channels,frame_count,image_rows,image_cols)
 
 def convert_images_to_array(filename,img_row=128,img_col=128):
 	img = imread(filename,flatten = True)

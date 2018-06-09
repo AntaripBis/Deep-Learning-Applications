@@ -8,13 +8,14 @@ from random import sample
 
 from keras.layers.convolutional import Conv3D,MaxPooling3D
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.models import Model,Sequential
+from keras.models import Model,Sequential,model_from_json,load_model
 from keras.optimizers import RMSprop,Adam
 from keras.callbacks import ModelCheckpoint
 from keras.regularizers import L1L2
 import keras.utils
 
 from input_data import VideoDataGenerator
+import model_utils
 
 class ActionRecognizer:
 	
@@ -70,6 +71,8 @@ class ActionRecognizer:
 					self.load_previous_model = True if value == "true" else False
 				elif key == "EPOCHS":
 					self.epochs = int(value)
+				elif key == "NUM_CHANNELS":
+					self.n_channels = int(value)
 				elif key == "LOSS_FUNC":
 					self.loss_fn = value
 				elif key == "METRICS":
@@ -93,15 +96,11 @@ class ActionRecognizer:
 		(x_train,y_train),(x_validation,y_validation) = self.partition_data(X,Y)
 		X = Y = None
 		
-		training_generator = VideoDataGenerator(x_train,y_train,self.batch_size,self.img_rows,self.img_cols, self.frame_count,self.n_classes)
+		training_generator = VideoDataGenerator(x_train,y_train,self.batch_size,self.img_rows,self.img_cols, self.frame_count,self.n_classes,self.n_channels)
 		print(("-"*20)+"Prepared generator for training data"+("-"*20))
-		validation_generator = VideoDataGenerator(x_validation,y_validation,self.batch_size,self.img_rows,self.img_cols, self.frame_count,self.n_classes)
+		validation_generator = VideoDataGenerator(x_validation,y_validation,self.batch_size,self.img_rows,self.img_cols, self.frame_count,self.n_classes,self.n_channels)
 		print(("-"*20)+"Prepared generator for validation data"+("-"*20))
 		
-		
-		'''
-			Model building starts : Either build a new model or load a previous model
-		'''
 		model = None
 		if self.load_previous_model and os.path.exists("/".join([self.model_dir,self.model_json_file])):
 			# load json and create model
@@ -131,8 +130,15 @@ class ActionRecognizer:
 		#print(index.shape)
 		x_train = X[index]
 		y_train = Y[index]
+		x_validation = [X[i] for i in range(len(X)) if i not in index]
+		y_validation = [Y[i] for i in range(len(Y)) if i not in index]
+		'''
 		x_validation = np.delete(X,index)
 		y_validation = np.delete(Y,index)
+		
+		for i,x in enumerate(x_validation):
+			print("X : %s Y : %s" % (x,str(y_validation[i])))
+		'''
 		return (x_train,y_train),(x_validation,y_validation)	
 		
 	def compile_model(self,model):
@@ -169,23 +175,24 @@ class ActionRecognizer:
 	
 	def load_metadata(self):
 		X = []
-		y = []
+		Y = []
 		action_dirs = listdir(self.data_dir)
 		for action_dir in action_dirs:
 			if not isfile(action_dir):
-				new_path = join(self.data_dir,action_dir)
+				new_path = "/".join([self.data_dir,action_dir])
 				action_files = listdir(new_path)
 				for action_file in action_files:
-					X.append(join(new_path,action_file))
-					y.append(self.category_dict[action_dir])
-				
-		return np.array(X),np.array(y)
+					X.append("/".join([new_path,action_file]))
+					Y.append(self.category_dict[action_dir])
+					#print("X : %s Y : %d" % (X[len(X)-1],Y[len(Y)-1]))
+		#print(self.category_dict)
+		return np.array(X),np.array(Y)
 		
 	def build_model(self):
 		model = Sequential()
 		if len(self.convolution_layers) > 0 and len(self.pool) > 0:
-			print(self.convolution_layers[0])
-			model.add(Conv3D(self.filters[0],kernel_size=self.convolution_layers[0],input_shape=(1,self.frame_count,self.img_rows,self.img_cols),activation="relu",data_format="channels_first",kernel_regularizer = self.reg(),bias_regularizer = self.reg()))
+			#print(self.convolution_layers[0])
+			model.add(Conv3D(self.filters[0],kernel_size=self.convolution_layers[0],input_shape=(self.n_channels,self.frame_count,self.img_rows,self.img_cols),activation="relu",data_format="channels_first",kernel_regularizer = self.reg(),bias_regularizer = self.reg()))
 			model.add(MaxPooling3D(pool_size=(self.pool[0],self.pool[0],self.pool[0])))
 			model.add(Dropout(self.dropout_rate))
 			if len(self.convolution_layers) >= 2:
@@ -207,26 +214,36 @@ class ActionRecognizer:
 		if model is None or video_files is None:
 			return
 		if not os.path.exists(self.result_dir):
-			os,path.makedirs(self.result_dir)
-		with open("/".join(self.result_dir,self.result_file),"w") as writer:
-			for i,audio_file in enumerate(audio_files):
-				predicted_label = self.generate_text_from_speechfile(model,video_file)
-				writer.write("|\t|".join([audio_file,label_texts[i],translated_text])+"\n")
+			os.makedirs(self.result_dir)
+		print("reverse category dict : %s" % (str(self.reverse_category_dict)))
+		with open("/".join([self.result_dir,self.result_file]),"w") as writer:
+			for i,video_file in enumerate(video_files):
+				#if i > 30:
+				#	break
+				predicted_label = self.predict_label_for_video(model,video_file)
+				print("predicted label : %s" % (predicted_label))
+				largest_idx = np.where(label_texts[i] == np.max(label_texts[i]))
+				largest_idx = largest_idx[0][0]
+				#print("Label Texts : %s" % (self.reverse_category_dict[largest_idx]))
+				writer.write("|\t|".join([video_file,self.reverse_category_dict[largest_idx],predicted_label])+"\n")
 				print("%d - th classification completed" % (i+1))
 			writer.close()
 			
 			
 		
-	def generate_text_from_speechfile(self,model,video_file):
-		video_data = model_utils.convert_video_to_frames(video_file,self.img_rows,self.img_cols,self.frame_count)
-		video_data = video_data.reshape((1,1,self.img_rows,self.img_cols,self.frame_count))
-		label_list =  model.predict(video_data,batch_size = 1)
+	def predict_label_for_video(self,model,video_file):
+		video_data = model_utils.convert_video_to_frames(video_file,self.img_rows,self.img_cols,self.frame_count,self.n_channels)
+		#print(video_data.shape)
+		video_data = video_data.reshape((1,self.n_channels,self.frame_count,self.img_rows,self.img_cols))
+		label_list =  model.predict_on_batch(video_data)
+		#print(label_list)
 		max_idx = 0
-		max_val = label_list[0,0,0]
-		for i in range(1,label_list.shape[2]):
-			if max_val < label_list[0,0,i]:
-				max_val = label_list[0,0,i]
+		max_val = label_list[0,0]
+		for i in range(1,label_list.shape[1]):
+			if max_val < label_list[0,i]:
+				max_val = label_list[0,i]
 				max_idx = i
+		#print("Maximum ID : %d" % (max_idx))
 		return self.reverse_category_dict[max_idx]
 
 if __name__=="__main__":
