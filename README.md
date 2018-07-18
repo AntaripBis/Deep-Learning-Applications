@@ -15,7 +15,7 @@ The repository contains different applications of deep learning using the keras 
 
 # Datsets used
 1. Common Voice dataset for the speech to text translation - https://www.kaggle.com/mozillaorg/common-voice
-2. Human Activity Video Datasets for video recognition- https://www.cs.utexas.edu/~chaoyeh/web_action_data/dataset_list.html
+2. Human Activity Video Datasets for video recognition- http://www.nada.kth.se/cvap/actions/
 3. CIFAR-10 dataset to be used for image generation
 
 # Configuration
