@@ -18,4 +18,12 @@ The repository contains different applications of deep learning using the keras 
 2. Human Activity Video Datasets for video recognition- https://www.cs.utexas.edu/~chaoyeh/web_action_data/dataset_list.html
 3. CIFAR-10 dataset to be used for image generation
 
-
+# Configuration
+The 3 properties files in the config folder are used to set the properties of the applications. Below are some key properties that can be set for the applications.
+1. DATA_DIR : Path to the input data
+2. MODEL_DIR : Path to where the model will be stored
+3. RESULT_DIR : Path to the location where the results of the model will be stored
+4. LEARNING_RATE : Learning rate for the optimizers used in the model
+5. BATCH_SIZE : number of instances to be considered in each batch while training
+6. LOAD_PREVIOUS_MODEL_FLAG : it can take true or false value, if set to true, it will load the model already trained from the MODEL_DIR location
+7. TRAINING_RATIO : it specifies the ratio in which the data has to be split into train and test set
